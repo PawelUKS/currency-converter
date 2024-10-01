@@ -5,7 +5,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="240.0" prefWidth="420.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="240.0" prefWidth="420.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.paweluks.currencyconverter.CurrencyConverterController">
    <children>
       <TextField fx:id="textFeld1" layoutX="64.0" layoutY="108.0" prefHeight="25.0" prefWidth="91.0" />
       <TextField fx:id="textFeld2" layoutX="64.0" layoutY="152.0" prefHeight="25.0" prefWidth="91.0" />

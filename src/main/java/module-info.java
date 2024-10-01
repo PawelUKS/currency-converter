@@ -1,6 +1,7 @@
 module com.github.paweluks.currencyconverter {
     requires javafx.fxml;
     requires atlantafx.base;
+    requires com.google.gson;
 
 
     opens com.github.paweluks.currencyconverter to javafx.fxml;
