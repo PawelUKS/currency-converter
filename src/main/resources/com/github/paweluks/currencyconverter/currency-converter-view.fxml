@@ -9,8 +9,8 @@
    <children>
       <TextField fx:id="textField1" layoutX="64.0" layoutY="108.0" prefHeight="25.0" prefWidth="91.0" />
       <TextField fx:id="textField2" layoutX="64.0" layoutY="152.0" prefHeight="25.0" prefWidth="91.0" />
-      <Label fx:id="label2" layoutX="94.0" layoutY="67.0" prefHeight="17.0" prefWidth="241.0" text="Label" />
-      <Label fx:id="label1" layoutX="94.0" layoutY="43.0" prefHeight="17.0" prefWidth="241.0" text="Label" />
+      <Label fx:id="label2" layoutX="94.0" layoutY="67.0" prefHeight="17.0" prefWidth="241.0" text="" />
+      <Label fx:id="label1" layoutX="94.0" layoutY="43.0" prefHeight="17.0" prefWidth="241.0" text="" />
       <ComboBox fx:id="comboBox1" layoutX="183.0" layoutY="108.0" prefHeight="25.0" prefWidth="184.0" />
       <ComboBox fx:id="comboBox2" layoutX="183.0" layoutY="152.0" prefHeight="25.0" prefWidth="184.0" />
    </children>
