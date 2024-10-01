@@ -21,7 +21,7 @@ public class CurrencyConverterModel {
     private static final String API_URL = "https://www.floatrates.com/daily/usd.json";
     private static final String LOCAL_FILE_PATH = "target/data/currency.json";
     private static final String LOCAL_PATH = "target/data/";
-    private static Map<String, Map<String, String>> currencyData = new HashMap<>();
+    private Map<String, Map<String, String>> currencyData = new HashMap<>();
 
     public void createPath(){
         // Create LOCAL_PATH
@@ -47,13 +47,37 @@ public class CurrencyConverterModel {
             }
 
         } catch (IOException e) {
-            System.out.println("Fehler beim Herstellen der Verbindung. Lade lokale Datei...");
-
+            System.out.println("Fehler beim Herunterladen der JSON-Datei: " + e.getMessage());
         }
 
     }
 
+    // Daten einmal aus der JSON-Datei laden
+    public void jsonToMap() {
+        Path path = Paths.get(LOCAL_FILE_PATH);
+        if (Files.exists(path)) {
+            Gson gson = new Gson();
+            try (FileReader reader = new FileReader(LOCAL_FILE_PATH)) {
+                Type type = new TypeToken<HashMap<String, Map<String, String>>>() {}.getType();
+                currencyData = gson.fromJson(reader, type);
+                System.out.println("JSON-Datei erfolgreich geladen.");
+            } catch (IOException e) {
+                System.out.println("Fehler beim Laden der JSON-Datei: " + e.getMessage());
+            }
+        } else {
+            System.out.println("Die Datei existiert nicht: " + LOCAL_FILE_PATH);
+        }
+    }
 
+    // Schneller Zugriff auf Währungsinformationen aus der Map
+    public Map<String, String> getCurrencyInfo(String currencyCode) {
+        return currencyData.get(currencyCode.toLowerCase());
+    }
+
+    // Rückgabe aller Währungen
+    public Map<String, Map<String, String>> getAllCurrencies() {
+        return currencyData;
+    }
 
 
 }
