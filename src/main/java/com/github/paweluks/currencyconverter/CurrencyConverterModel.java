@@ -17,12 +17,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.StandardOpenOption;
-import org.json.JSONObject;
-import java.nio.file.*;
-import java.io.*;
-import java.net.*;
-import java.nio.charset.StandardCharsets;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -53,12 +48,6 @@ public class CurrencyConverterModel {
             try (InputStream inputStream = connection.getInputStream()) {
                 // JSON-Inhalt als String laden (aus dem neuen InputStream)
                 String newJsonContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-
-                if (newJsonContent.isEmpty()) {
-                    System.out.println("EMPTY");
-                } else {
-                    System.out.println("IS HERE");
-                }
 
                 // Falls die lokale Datei existiert, vergleiche die "date"
                 if (Files.exists(path)) {
@@ -134,31 +123,6 @@ public class CurrencyConverterModel {
         return null;
     }
 
-    // Hilfsmethode, um die "rates" aus einer JSON-Datei zu extrahieren
-    private Map<String, Double> extractRatesFromJson(String jsonContent) {
-        Map<String, Double> ratesMap = new HashMap<>();
-
-        try {
-            // Verwende eine JSON-Bibliothek wie Jackson oder Gson, um die "rates" zu extrahieren
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree(jsonContent);
-
-            // Navigiere zum "rates"-Knoten
-            JsonNode ratesNode = rootNode.path("rates");
-            Iterator<Map.Entry<String, JsonNode>> fields = ratesNode.fields();
-
-            // Füge jede Währung und ihren Kurs zur Map hinzu
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
-                ratesMap.put(field.getKey(), field.getValue().asDouble());
-            }
-        } catch (IOException e) {
-            System.out.println("Fehler beim Verarbeiten der JSON-Daten: " + e.getMessage());
-        }
-
-        return ratesMap;
-    }
-
 
     // Daten einmal aus der JSON-Datei laden
     public void jsonToMap() {
@@ -166,26 +130,29 @@ public class CurrencyConverterModel {
         if (Files.exists(path)) {
             Gson gson = new Gson();
             try (FileReader reader = new FileReader(LOCAL_FILE_PATH)) {
-                Type type = new TypeToken<HashMap<String, Map<String, String>>>() {
-                }.getType();
+                Type type = new TypeToken<HashMap<String, Map<String, String>>>() {}.getType();
                 Map<String, Map<String, String>> tempCurrencyData = gson.fromJson(reader, type);
 
                 // Iteriere über die temporäre Map und füge die Währungen mit dem Namen als Schlüssel in die TreeMap ein
                 for (Map.Entry<String, Map<String, String>> entry : tempCurrencyData.entrySet()) {
-                    String currencyName = entry.getValue().get("name").trim();
-                    currencyData.put(currencyName, entry.getValue());
-                }
-                // This JSON file is base on USD so itself is not included. We have to include it manually with a rate of 1.0
-                Map<String, String> usdInfo = new HashMap<>();
-                usdInfo.put("name", "US-Dollar");
-                usdInfo.put("alphaCode", "USD");
-                usdInfo.put("rate", "1.0"); // 1 USD = 1 USD
-                usdInfo.put("date", "current"); // Optional: Setze das aktuelle Datum
+                    Map<String, String> currencyInfo = entry.getValue();
+                    String currencyName = currencyInfo.get("name").trim();
 
-                // Füge USD zur Map hinzu
-                currencyData.put("US-Dollar", usdInfo);
+                    // Füge den Währungsnamen und die zugehörigen Informationen zur Map hinzu
+                    currencyData.put(currencyName, currencyInfo);
+                }
+                // Füge die Basiswährung (US-Dollar) hinzu, falls nicht vorhanden
+                if (!currencyData.containsKey("US-Dollar")) {
+                    Map<String, String> usdInfo = new HashMap<>();
+                    usdInfo.put("code", "USD");
+                    usdInfo.put("name", "US-Dollar");
+                    usdInfo.put("rate", "1.0"); // 1 USD = 1 USD
+                    usdInfo.put("date", "current"); // Optional: Setze das aktuelle Datum
+                    currencyData.put("US-Dollar", usdInfo);
+                }
 
                 System.out.println("JSON-Datei erfolgreich geladen und Währungen nach Namen sortiert.");
+
 
             } catch (IOException e) {
                 System.out.println("Fehler beim Laden der JSON-Datei: " + e.getMessage());
