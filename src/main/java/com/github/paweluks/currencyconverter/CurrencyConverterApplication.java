@@ -1,9 +1,6 @@
 package com.github.paweluks.currencyconverter;
 
-// Dracula-Theme
-
 import atlantafx.base.theme.Dracula;
-
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -19,6 +16,7 @@ public class CurrencyConverterApplication extends Application {
 
         // Set the theme (stylesheet) for the entire application here
         Application.setUserAgentStylesheet(new Dracula().getUserAgentStylesheet());
+        
         stage.setResizable(false);
         stage.setTitle("Währungsrechner");
         stage.setScene(scene);
