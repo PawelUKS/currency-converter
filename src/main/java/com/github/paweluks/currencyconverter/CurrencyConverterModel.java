@@ -18,7 +18,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
-
+import org.json.JSONObject;
+import java.nio.file.*;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -36,9 +40,6 @@ public class CurrencyConverterModel {
             System.out.println("Fehler beim Erstellen des Verzeichnisses: " + e.getMessage());
         }
     }
-
-
-
     public void downloadAndSaveJson() {
         createPath();
         Path path = Paths.get(LOCAL_FILE_PATH);
@@ -53,42 +54,38 @@ public class CurrencyConverterModel {
                 // JSON-Inhalt als String laden (aus dem neuen InputStream)
                 String newJsonContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
-                if(newJsonContent.isEmpty()){
+                if (newJsonContent.isEmpty()) {
                     System.out.println("EMPTY");
-                }else{
+                } else {
                     System.out.println("IS HERE");
                 }
-                // Falls die lokale Datei existiert, vergleiche die "rates"
+
+                // Falls die lokale Datei existiert, vergleiche die "date"
                 if (Files.exists(path)) {
                     System.out.println("path existiert");
+
                     // Lese die bestehende JSON-Datei
                     String existingJsonContent = Files.readString(path, StandardCharsets.UTF_8);
-                    System.out.println(existingJsonContent);
-                    // Extrahiere die "rates" aus beiden JSON-Dateien
-                    Map<String, Double> existingRates = extractRatesFromJson(existingJsonContent);
-                    Map<String, Double> newRates = extractRatesFromJson(newJsonContent);
-                    for (Map.Entry<String, Double> entry : existingRates.entrySet()) {
-                        System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
-                    }
 
-                    for (Map.Entry<String, Double> entry : newRates.entrySet()) {
-                        System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
-                    }
-                    // Vergleiche die "rates"
-                    if (existingRates.equals(newRates)) {
-                        System.out.println("Die Währungskurse sind gleich. Kein Überschreiben erforderlich.");
+                    // Extrahiere das Datum aus beiden JSON-Dateien
+                    String existingDate = extractDateFromJson(existingJsonContent);
+                    String newDate = extractDateFromJson(newJsonContent);
 
+                    System.out.println("Existing date: " + existingDate);
+                    System.out.println("New date: " + newDate);
+
+                    // Vergleiche die "date"-Werte
+                    if (existingDate.equals(newDate)) {
+                        System.out.println("Das Datum ist gleich. Kein Überschreiben erforderlich.");
                     } else {
-                        // Wenn die "rates" unterschiedlich sind, schreibe die neue Datei
+                        // Wenn die "date" unterschiedlich sind, schreibe die neue Datei
                         Files.writeString(path, newJsonContent, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                        System.out.println("Die Währungskurse haben sich geändert. Neue JSON-Datei gespeichert.");
-
+                        System.out.println("Das Datum hat sich geändert. Neue JSON-Datei gespeichert.");
                     }
                 } else {
                     // Falls die Datei nicht existiert, speichere sie einfach
                     Files.writeString(path, newJsonContent, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                     System.out.println("Die Datei wurde neu erstellt.");
-
                 }
             }
 
@@ -96,6 +93,16 @@ public class CurrencyConverterModel {
             System.out.println("Fehler beim Herunterladen der JSON-Datei: " + e.getMessage());
         }
     }
+
+    // Hilfsmethode, um das Datum aus dem JSON-String zu extrahieren
+    private String extractDateFromJson(String jsonContent) {
+        JSONObject jsonObject = new JSONObject(jsonContent);
+
+        // Nimm den ersten Währungseintrag und extrahiere das Datum
+        String firstKey = jsonObject.keys().next();  // Nimmt den ersten Key (z. B. "aud", "cad", etc.)
+        return jsonObject.getJSONObject(firstKey).getString("date");
+    }
+
 
     // Methode, um das erste Date zu extrahieren und zu konvertieren
     public String getFirstDateFromJson() {
