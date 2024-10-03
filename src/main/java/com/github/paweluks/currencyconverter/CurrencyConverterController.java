@@ -39,39 +39,9 @@ public class CurrencyConverterController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         model = new CurrencyConverterModel();
-
-
-        Task<Void> downloadTask = new Task<>() {
-            @Override
-            protected Void call() {
-                // Download JSON file from API in Background
-                model.downloadAndSaveJson();
-                return null;
-            }
-
-            @Override
-            protected void succeeded() {
-                // Load JSON data in Map
-                model.jsonToMap();
-                loadDataInBackground();
-
-            }
-
-            @Override
-            protected void failed() {
-                // Download failed
-                System.out.println("Fehler beim Herunterladen der JSON-Datei");
-            }
-        };
-        Thread downloadThread = new Thread(downloadTask);
-        downloadThread.setDaemon(true); // App can be closed even if this thread is running
-        downloadThread.start();
         initializeComboBoxes();
-
-
-
+        loadDataInBackground();
     }
-
 
     private void initializeComboBoxes() {
         comboBox1.setEditable(false);
@@ -83,13 +53,31 @@ public class CurrencyConverterController implements Initializable {
         comboBox1.setOnKeyReleased(event -> autoCompleteComboBox(comboBox1, event.getText().toLowerCase()));
         comboBox2.setOnKeyReleased(event -> autoCompleteComboBox(comboBox2, event.getText().toLowerCase()));
     }
+
     private void loadDataInBackground() {
-        setupUI();
+        Task<Void> downloadTask = new Task<>() {
+            @Override
+            protected Void call() {
+                model.downloadAndSaveJson();
+                return null;
+            }
 
+            @Override
+            protected void succeeded() {
+                model.jsonToMap();
+                setupUI();
+            }
 
+            @Override
+            protected void failed() {
+                //System.out.println("Fehler beim Herunterladen der JSON-Datei");
+            }
+        };
+        Thread downloadThread = new Thread(downloadTask);
+        downloadThread.setDaemon(true); // App can be closed even if this thread is running
+        downloadThread.start();
     }
-
-
+    
     private void setupUI() {
         Set<String> currencies = model.getAllCurrencies().keySet();
         comboBox1.getItems().addAll(currencies);
