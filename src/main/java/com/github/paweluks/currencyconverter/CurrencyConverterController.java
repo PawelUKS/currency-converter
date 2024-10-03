@@ -40,6 +40,7 @@ public class CurrencyConverterController implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         model = new CurrencyConverterModel();
 
+
         Task<Void> downloadTask = new Task<>() {
             @Override
             protected Void call() {
@@ -52,29 +53,8 @@ public class CurrencyConverterController implements Initializable {
             protected void succeeded() {
                 // Load JSON data in Map
                 model.jsonToMap();
+                loadDataInBackground();
 
-                Set<String> data = model.getAllCurrencies().keySet();
-
-                comboBox1.getItems().addAll(data);
-                comboBox2.getItems().addAll(data);
-
-                // Set start-currencies
-                comboBox1.getSelectionModel().select("Euro");
-                comboBox2.getSelectionModel().select("US-Dollar");
-                // Set startvalue for the textField1
-                textField1.setText("1");
-                updateTimestampLabel();
-                // Calc the currency and update the labels
-                updateConversion(true);
-                updateLabels();
-                // Listener for both textfields
-                textField1.textProperty().addListener((observable, oldValue, newValue) -> {
-                    handleTextFieldChange(oldValue, newValue, textField1, true);
-                });
-
-                textField2.textProperty().addListener((observable, oldValue, newValue) -> {
-                    handleTextFieldChange(oldValue, newValue, textField2, false);
-                });
             }
 
             @Override
@@ -87,6 +67,7 @@ public class CurrencyConverterController implements Initializable {
         downloadThread.setDaemon(true); // App can be closed even if this thread is running
         downloadThread.start();
         initializeComboBoxes();
+
 
 
     }
@@ -102,8 +83,35 @@ public class CurrencyConverterController implements Initializable {
         comboBox1.setOnKeyReleased(event -> autoCompleteComboBox(comboBox1, event.getText().toLowerCase()));
         comboBox2.setOnKeyReleased(event -> autoCompleteComboBox(comboBox2, event.getText().toLowerCase()));
     }
+    private void loadDataInBackground() {
+        setupUI();
 
 
+    }
+
+
+    private void setupUI() {
+        Set<String> currencies = model.getAllCurrencies().keySet();
+        comboBox1.getItems().addAll(currencies);
+        comboBox2.getItems().addAll(currencies);
+
+        comboBox1.getSelectionModel().select("Euro");
+        comboBox2.getSelectionModel().select("US-Dollar");
+        textField1.setText("1");
+
+        updateTimestampLabel();
+        updateConversion(true);
+        updateLabels();
+        addTextFieldListeners();
+    }
+
+    private void addTextFieldListeners() {
+        textField1.textProperty().addListener((observable, oldValue, newValue) ->
+                handleTextFieldChange(oldValue, newValue, textField1, true));
+
+        textField2.textProperty().addListener((observable, oldValue, newValue) ->
+                handleTextFieldChange(oldValue, newValue, textField2, false));
+    }
 
 
 
