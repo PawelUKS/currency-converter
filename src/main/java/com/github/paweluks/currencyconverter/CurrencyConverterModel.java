@@ -26,7 +26,7 @@ public class CurrencyConverterModel {
     private static final String API_URL = "https://www.floatrates.com/daily/usd.json";
     private static final String LOCAL_FILE_PATH = "target/data/currency.json";
     private static final String LOCAL_PATH = "target/data/";
-    private Map<String, Map<String, String>> currencyData = new TreeMap<>();
+    private final Map<String, Map<String, String>> currencyData = new TreeMap<>();
 
     public void createPath() {
         // Create LOCAL_PATH
@@ -53,15 +53,27 @@ public class CurrencyConverterModel {
                 // JSON-Inhalt als String laden (aus dem neuen InputStream)
                 String newJsonContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
+                if(newJsonContent.isEmpty()){
+                    System.out.println("EMPTY");
+                }else{
+                    System.out.println("IS HERE");
+                }
                 // Falls die lokale Datei existiert, vergleiche die "rates"
                 if (Files.exists(path)) {
+                    System.out.println("path existiert");
                     // Lese die bestehende JSON-Datei
                     String existingJsonContent = Files.readString(path, StandardCharsets.UTF_8);
-
+                    System.out.println(existingJsonContent);
                     // Extrahiere die "rates" aus beiden JSON-Dateien
                     Map<String, Double> existingRates = extractRatesFromJson(existingJsonContent);
                     Map<String, Double> newRates = extractRatesFromJson(newJsonContent);
+                    for (Map.Entry<String, Double> entry : existingRates.entrySet()) {
+                        System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
+                    }
 
+                    for (Map.Entry<String, Double> entry : newRates.entrySet()) {
+                        System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
+                    }
                     // Vergleiche die "rates"
                     if (existingRates.equals(newRates)) {
                         System.out.println("Die Währungskurse sind gleich. Kein Überschreiben erforderlich.");
