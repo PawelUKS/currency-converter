@@ -1,48 +1,37 @@
 package com.github.paweluks.currencyconverter;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
+
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyEvent;
+import javafx.concurrent.Task;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+
 import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
 
 public class CurrencyConverterController implements Initializable {
 
     @FXML
-    private Label label1;
+    private Label label1, label2, label3;
 
     @FXML
-    private Label label2;
+    private TextField textField1, textField2;
 
     @FXML
-    private Label label3;
+    private ComboBox<String> comboBox1, comboBox2;
 
-    @FXML
-    private TextField textField1;
-
-    @FXML
-    private TextField textField2;
-
-    @FXML
-    private ComboBox<String> comboBox1;
-
-    @FXML
-    private ComboBox<String> comboBox2;
 
     private CurrencyConverterModel model;
     private boolean isUpdating = false;
+    private final Map<ComboBox<String>, String> searchStrings = new HashMap<>();
+    private final Map<ComboBox<String>, Long> lastKeyPressTimes = new HashMap<>();
+
+
     // Variable für den Suchstring
     private String searchString = "";
     private long lastKeyPressTime = 0;
@@ -50,6 +39,7 @@ public class CurrencyConverterController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         model = new CurrencyConverterModel();
+
         Task<Void> downloadTask = new Task<>() {
             @Override
             protected Void call() {
@@ -96,33 +86,26 @@ public class CurrencyConverterController implements Initializable {
         Thread downloadThread = new Thread(downloadTask);
         downloadThread.setDaemon(true); // App can be closed even if this thread is running
         downloadThread.start();
-
-        comboBox1.setOnAction(event -> {
-
-            updateConversion(true);
-
-        });
-
-        comboBox2.setOnAction(event -> {
-
-            updateConversion(true);
-
-        });
-
-        comboBox1.setEditable(false);  // Stelle sicher, dass die ComboBox nicht editierbar ist
-        comboBox2.setEditable(false);
-        comboBox1.setOnKeyReleased(event -> {
-            String key = event.getText().toLowerCase(); // Der eingegebene Buchstabe
-            autoCompleteComboBox(comboBox1, key);
-        });
-
-        comboBox2.setOnKeyReleased(event -> {
-            String key = event.getText().toLowerCase(); // Der eingegebene Buchstabe
-            autoCompleteComboBox(comboBox2, key);
-        });
+        initializeComboBoxes();
 
 
     }
+
+
+    private void initializeComboBoxes() {
+        comboBox1.setEditable(false);
+        comboBox2.setEditable(false);
+
+        comboBox1.setOnAction(event -> updateConversion(true));
+        comboBox2.setOnAction(event -> updateConversion(true));
+
+        comboBox1.setOnKeyReleased(event -> autoCompleteComboBox(comboBox1, event.getText().toLowerCase()));
+        comboBox2.setOnKeyReleased(event -> autoCompleteComboBox(comboBox2, event.getText().toLowerCase()));
+    }
+
+
+
+
 
     public void autoCompleteComboBox(ComboBox<String> comboBox, String key) {
         long currentTime = System.currentTimeMillis();
