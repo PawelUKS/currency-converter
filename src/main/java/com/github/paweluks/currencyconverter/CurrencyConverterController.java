@@ -32,10 +32,6 @@ public class CurrencyConverterController implements Initializable {
     private final Map<ComboBox<String>, Long> lastKeyPressTimes = new HashMap<>();
 
 
-    // Variable für den Suchstring
-    private String searchString = "";
-    private long lastKeyPressTime = 0;
-
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         model = new CurrencyConverterModel();
@@ -77,7 +73,7 @@ public class CurrencyConverterController implements Initializable {
         downloadThread.setDaemon(true); // App can be closed even if this thread is running
         downloadThread.start();
     }
-    
+
     private void setupUI() {
         Set<String> currencies = model.getAllCurrencies().keySet();
         comboBox1.getItems().addAll(currencies);
@@ -105,22 +101,22 @@ public class CurrencyConverterController implements Initializable {
 
     public void autoCompleteComboBox(ComboBox<String> comboBox, String key) {
         long currentTime = System.currentTimeMillis();
+        String searchString = searchStrings.getOrDefault(comboBox, "");
+        long lastKeyPressTime = lastKeyPressTimes.getOrDefault(comboBox, 0L);
 
-        // Überprüfe, ob seit der letzten Eingabe mehr als 1 Sekunde vergangen ist
         if (currentTime - lastKeyPressTime > 1000) {
-            searchString = ""; // Reset the search string
+            searchString = "";
         }
 
-        // Füge den aktuellen Buchstaben zum Suchstring hinzu
         searchString += key;
-        lastKeyPressTime = currentTime; // Aktualisiere die Zeit der letzten Eingabe
+        lastKeyPressTime = currentTime;
+        searchStrings.put(comboBox, searchString);
+        lastKeyPressTimes.put(comboBox, lastKeyPressTime);
 
         if (!searchString.isEmpty()) {
-            // Durchlaufe alle Einträge in der übergebenen ComboBox
-            for (String item : comboBox.getItems()) {
-                // Suche den ersten Eintrag, der mit dem Suchstring beginnt
+           for (String item : comboBox.getItems()) {
                 if (item.toLowerCase().startsWith(searchString)) {
-                    comboBox.getSelectionModel().select(item); // Wähle das passende Element aus
+                    comboBox.getSelectionModel().select(item);
                     break;
                 }
             }
@@ -129,11 +125,8 @@ public class CurrencyConverterController implements Initializable {
 
     public void updateTimestampLabel() {
         String timestamp = model.getFirstDateFromJson();
-        if (timestamp != null) {
-            label3.setText("Letzte Aktualisierung: " + timestamp);
-        } else {
-            label3.setText("");
-        }
+        label3.setText(timestamp != null ? "Letzte Aktualisierung: " + timestamp : "");
+        
     }
 
     public void updateLabels(){
