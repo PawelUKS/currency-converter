@@ -7,11 +7,13 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.concurrent.Task;
+import javafx.scene.control.TextFormatter;
 
 import java.math.BigDecimal;
 
 import java.net.URL;
 import java.util.*;
+import java.util.function.UnaryOperator;
 
 
 public class CurrencyConverterController implements Initializable {
@@ -43,8 +45,8 @@ public class CurrencyConverterController implements Initializable {
         comboBox1.setEditable(false);
         comboBox2.setEditable(false);
 
-        comboBox1.setOnAction(event -> updateConversion(true));
-        comboBox2.setOnAction(event -> updateConversion(true));
+        comboBox1.setOnAction(event -> updateConversion(textField1));
+        comboBox2.setOnAction(event -> updateConversion(textField2));
 
         comboBox1.setOnKeyReleased(event -> autoCompleteComboBox(comboBox1, event.getText().toLowerCase()));
         comboBox2.setOnKeyReleased(event -> autoCompleteComboBox(comboBox2, event.getText().toLowerCase()));
@@ -70,7 +72,7 @@ public class CurrencyConverterController implements Initializable {
             }
         };
         Thread downloadThread = new Thread(downloadTask);
-        downloadThread.setDaemon(true); // App can be closed even if this thread is running
+        downloadThread.setDaemon(true);
         downloadThread.start();
     }
 
@@ -84,19 +86,35 @@ public class CurrencyConverterController implements Initializable {
         textField1.setText("1");
 
         updateTimestampLabel();
-        updateConversion(true);
+        updateConversion(textField1);
         updateLabels();
         addTextFieldListeners();
+        addTextFormatters();
     }
 
     private void addTextFieldListeners() {
         textField1.textProperty().addListener((observable, oldValue, newValue) ->
-                handleTextFieldChange(oldValue, newValue, textField1, true));
+                handleTextFieldChange(textField1));
 
         textField2.textProperty().addListener((observable, oldValue, newValue) ->
-                handleTextFieldChange(oldValue, newValue, textField2, false));
+                handleTextFieldChange(textField2));
     }
+    private void addTextFormatters() {
+        UnaryOperator<TextFormatter.Change> filter = change -> {
+            String newText = change.getControlNewText();
+            // Erlaubt Ziffern, optional gefolgt von Komma oder Punkt und weiteren Ziffern
+            if (newText.matches("\\d*([.,]\\d*)?")) {
+                return change;
+            }
+            return null;
+        };
 
+        TextFormatter<String> textFormatter1 = new TextFormatter<>(filter);
+        TextFormatter<String> textFormatter2 = new TextFormatter<>(filter);
+
+        textField1.setTextFormatter(textFormatter1);
+        textField2.setTextFormatter(textFormatter2);
+    }
 
 
     public void autoCompleteComboBox(ComboBox<String> comboBox, String key) {
@@ -110,6 +128,7 @@ public class CurrencyConverterController implements Initializable {
 
         searchString += key;
         lastKeyPressTime = currentTime;
+
         searchStrings.put(comboBox, searchString);
         lastKeyPressTimes.put(comboBox, lastKeyPressTime);
 
@@ -126,7 +145,7 @@ public class CurrencyConverterController implements Initializable {
     public void updateTimestampLabel() {
         String timestamp = model.getFirstDateFromJson();
         label3.setText(timestamp != null ? "Letzte Aktualisierung: " + timestamp : "");
-        
+
     }
 
     public void updateLabels(){
@@ -137,70 +156,56 @@ public class CurrencyConverterController implements Initializable {
             label2.setText(textField2.getText().replace(".",",") + " " + comboBox2.getValue());
         }
     }
-    // Methode zur Aktualisierung des Wechselkurses basierend auf der Benutzerauswahl
-    // Methode zur Verarbeitung der Textfeldänderung
-    private void handleTextFieldChange(String oldValue, String newValue, TextField textField, boolean fromTextField1) {
-        if (!isUpdating) {
-            newValue = newValue.replace(",", ".");
 
-            if (newValue.startsWith(".") && newValue.length() > 1 && Character.isDigit(newValue.charAt(1))) {
-                newValue = "0" + newValue;
-            }
-
-            if (!newValue.matches("\\d*(\\.\\d*)?")) {
-                textField.setText(oldValue);
-            } else {
-                textField.setText(newValue);
-            }
-
-            // Call Model for conversion
-            updateConversion(fromTextField1);
-            updateLabels();
+    private void handleTextFieldChange(TextField sourceTextField) {
+        if (isUpdating) {
+            return;
         }
-    }
-    private void updateConversion(boolean fromTextField1) {
         isUpdating = true;
 
 
+        try {
+            String text = sourceTextField.getText();
+            if (text.startsWith(".") || text.startsWith(",")) {
+                text = "0" + text;
+                sourceTextField.setText(text);
+            }
+            updateConversion(sourceTextField);
+            updateLabels();
+        } finally {
+        isUpdating = false;
+        }
+    }
+    private void updateConversion(TextField sourceTextField) {
+        isUpdating = true;
         String fromCurrency = comboBox1.getSelectionModel().getSelectedItem();
         String toCurrency = comboBox2.getSelectionModel().getSelectedItem();
 
         try {
-            if (fromTextField1) {
-                String inputText = textField1.getText();
-                System.out.println(inputText);
-                // Hole den Betrag aus textField1 (standardmäßig "1")
-                if (isValidNumber(inputText)) {
+            if (sourceTextField == textField1) {
+                String inputText = textField1.getText().replace(",",".");
+                if (!inputText.isEmpty()) {
                     double amount = Double.parseDouble(inputText);
                     BigDecimal result = model.convertFromSourceToTarget(amount, fromCurrency, toCurrency);
-                    //String result = model.convertFromSourceToTarget(amount, fromCurrency, toCurrency);
-                    //BigDecimal roundedResult = new BigDecimal(result).setScale(2, RoundingMode.HALF_UP);
-                    textField2.setText(result.toString());
+                    textField2.setText(result.toString().replace(".",","));
+                }else {
+                    textField2.clear();
                 }
 
-            } else {
-                double amount = Double.parseDouble(textField2.getText());
-                BigDecimal result = model.convertFromTargetToSource(amount, fromCurrency, toCurrency);
-                //String result = model.convertFromSourceToTarget(amount, fromCurrency, toCurrency);
-                textField1.setText(result.toString());
+            } else if(sourceTextField == textField2) {
+                String inputText = textField2.getText().replace(",",".");
+                if (!inputText.isEmpty()) {
+                    double amount = Double.parseDouble(inputText);
+                    BigDecimal result = model.convertFromTargetToSource(amount, fromCurrency, toCurrency);
+                    textField1.setText(result.toString().replace(".",","));
+                }else {
+                    textField1.clear();
+                }
             }
-
 
         } finally {
             isUpdating = false;  // Sperre entfernen
             updateLabels();
-        }
-    }
-
-    // Methode zur Überprüfung, ob eine Eingabe eine gültige Zahl ist
-    private boolean isValidNumber(String input) {
-        try {
-            Double.parseDouble(input);
-            System.out.println("TRUE");
-            return true;  // Es handelt sich um eine gültige Zahl
-        } catch (NumberFormatException e) {
-            System.out.println("FALSE");
-            return false;  // Es handelt sich um keine gültige Zahl
         }
     }
 }
