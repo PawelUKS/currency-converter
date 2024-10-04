@@ -14,7 +14,7 @@ public class CurrencyConverterApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(CurrencyConverterApplication.class.getResource("currency-converter-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 424, 240);
 
-        // Set the theme (stylesheet) for the entire application here
+        // Theme (stylesheet) für die ganze Anwendung wird hier gesetzt
         Application.setUserAgentStylesheet(new Dracula().getUserAgentStylesheet());
         
         stage.setResizable(false);

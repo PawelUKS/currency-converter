@@ -18,15 +18,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CurrencyConverterModel {
+
+    // Konstanten für API-URL und lokale Pfade
     private static final String API_URL = "https://www.floatrates.com/daily/usd.json";
     private static final String LOCAL_FILE_PATH = "target/data/currency.json";
     private static final String LOCAL_PATH = "target/data/";
+
+    // Map zum Speichern der Währungsdaten
     private final Map<String, Map<String, String>> currencyData = new TreeMap<>();
 
+    // Erstellt das lokale Verzeichnis, falls es nicht existiert
     public void createPath() {
         // Create LOCAL_PATH
         try {
@@ -35,21 +38,23 @@ public class CurrencyConverterModel {
             System.out.println("Fehler beim Erstellen des Verzeichnisses: " + e.getMessage());
         }
     }
+
+    // Lädt die JSON-Daten herunter und speichert sie lokal, wenn sich das Datum geändert hat
     public void downloadAndSaveJson() {
         createPath();
         Path path = Paths.get(LOCAL_FILE_PATH);
 
         try {
+            // Verbindung zur API herstellen
             URL url = new URL(API_URL);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 
             // Lade den neuen InputStream von der API
             try (InputStream inputStream = connection.getInputStream()) {
-                // JSON-Inhalt als String laden (aus dem neuen InputStream)
                 String newJsonContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
-                // Falls die lokale Datei existiert, vergleiche die "date"
+                // Prüfen, ob die lokale Datei existiert
                 if (Files.exists(path)) {
                     System.out.println("path existiert");
 
@@ -60,20 +65,17 @@ public class CurrencyConverterModel {
                     String existingDate = extractDateFromJson(existingJsonContent);
                     String newDate = extractDateFromJson(newJsonContent);
 
-                    System.out.println("Existing date: " + existingDate);
-                    System.out.println("New date: " + newDate);
-
-                    // Vergleiche die "date"-Werte
+                    // Vergleiche die Datumswerte
                     if (existingDate.equals(newDate)) {
                         System.out.println("Das Datum ist gleich. Kein Überschreiben erforderlich.");
                     } else {
-                        // Wenn die "date" unterschiedlich sind, schreibe die neue Datei
-                        Files.writeString(path, newJsonContent, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                        // Speichere die neue JSON-Datei
+                        saveJsonToFile(path, newJsonContent);
                         System.out.println("Das Datum hat sich geändert. Neue JSON-Datei gespeichert.");
                     }
                 } else {
-                    // Falls die Datei nicht existiert, speichere sie einfach
-                    Files.writeString(path, newJsonContent, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                    // Speichere die neue JSON-Datei
+                    saveJsonToFile(path, newJsonContent);
                     System.out.println("Die Datei wurde neu erstellt.");
                 }
             }
@@ -83,39 +85,57 @@ public class CurrencyConverterModel {
         }
     }
 
-    // Hilfsmethode, um das Datum aus dem JSON-String zu extrahieren
+    // Hilfsmethode zum Speichern des JSON-Inhalts in eine Datei
+    private void saveJsonToFile(Path path, String jsonContent) {
+        try {
+            Files.writeString(path, jsonContent, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            System.err.println("Fehler beim Speichern der JSON-Datei: " + e.getMessage());
+        }
+    }
+
+    // Extrahiert das Datum aus dem JSON-String
     private String extractDateFromJson(String jsonContent) {
         JSONObject jsonObject = new JSONObject(jsonContent);
 
-        // Nimm den ersten Währungseintrag und extrahiere das Datum
-        String firstKey = jsonObject.keys().next();  // Nimmt den ersten Key (z. B. "aud", "cad", etc.)
-        return jsonObject.getJSONObject(firstKey).getString("date");
+        // Nimmt den ersten Key und extrahiert das Datum
+        Iterator<String> keys = jsonObject.keys();
+        if (keys.hasNext()) {
+            String firstKey = keys.next();
+            return jsonObject.getJSONObject(firstKey).getString("date");
+        }
+        return null;
     }
 
 
-    // Methode, um das erste Date zu extrahieren und zu konvertieren
+    // Extrahiert das Datum aus der lokalen JSON-Datei und formatiert es
     public String getFirstDateFromJson() {
         Path path = Paths.get(LOCAL_FILE_PATH);
 
         if (Files.exists(path)) {
             try {
-                String content = new String(Files.readAllBytes(path));
+                String content = Files.readString(path, StandardCharsets.UTF_8);
                 JSONObject jsonObject = new JSONObject(content);
 
-                // Extrahiere das erste "date" Feld
-                String firstDate = jsonObject.getJSONObject("aud").getString("date");  // Beispiel: AUD als erste Währung
+                // Nimmt den ersten Key und extrahiert das Datum
+                Iterator<String> keys = jsonObject.keys();
+                if (keys.hasNext()) {
+                    String firstKey = keys.next();
+                    String firstDate = jsonObject.getJSONObject(firstKey).getString("date");
 
-                // Konvertiere das Datum von GMT in EU/Berlin Zeit
-                DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("EEE, d MMM yyyy HH:mm:ss z", Locale.ENGLISH);
-                ZonedDateTime gmtDateTime = ZonedDateTime.parse(firstDate, inputFormatter);
-                ZonedDateTime berlinDateTime = gmtDateTime.withZoneSameInstant(ZoneId.of("Europe/Berlin"));
+                    // Konvertiere das Datum von GMT in Europe/Berlin Zeit
+                    DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("EEE, d MMM yyyy HH:mm:ss z", Locale.ENGLISH);
+                    ZonedDateTime gmtDateTime = ZonedDateTime.parse(firstDate, inputFormatter);
+                    ZonedDateTime berlinDateTime = gmtDateTime.withZoneSameInstant(ZoneId.of("Europe/Berlin"));
 
-                // Formatieren des Datums in das gewünschte Format (Tag, Monat, Jahr, Uhrzeit mit Sekunden)
-                DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
-                return berlinDateTime.format(outputFormatter);
+                    // Formatieren des Datums in das gewünschte Format
+                    DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+                    return berlinDateTime.format(outputFormatter);
+                }
 
             } catch (Exception e) {
-                e.printStackTrace();
+                System.err.println("Fehler beim Extrahieren des Datums: " + e.getMessage());
             }
         }
 
@@ -124,45 +144,44 @@ public class CurrencyConverterModel {
     }
 
 
-    // Daten einmal aus der JSON-Datei laden
+    // Lädt die Währungsdaten aus der JSON-Datei in die Map
     public void jsonToMap() {
         Path path = Paths.get(LOCAL_FILE_PATH);
         if (Files.exists(path)) {
-            Gson gson = new Gson();
             try (FileReader reader = new FileReader(LOCAL_FILE_PATH)) {
-                Type type = new TypeToken<HashMap<String, Map<String, String>>>() {}.getType();
+                Gson gson = new Gson();
+                Type type = new TypeToken<HashMap<String, Map<String, String>>>() {
+                }.getType();
                 Map<String, Map<String, String>> tempCurrencyData = gson.fromJson(reader, type);
 
-                // Iteriere über die temporäre Map und füge die Währungen mit dem Namen als Schlüssel in die TreeMap ein
+                // Iteriere über die temporäre Map und füge die Währungen hinzu
                 for (Map.Entry<String, Map<String, String>> entry : tempCurrencyData.entrySet()) {
                     Map<String, String> currencyInfo = entry.getValue();
                     String currencyName = currencyInfo.get("name").trim();
-
-                    // Füge den Währungsnamen und die zugehörigen Informationen zur Map hinzu
                     currencyData.put(currencyName, currencyInfo);
                 }
+
                 // Füge die Basiswährung (US-Dollar) hinzu, falls nicht vorhanden
                 if (!currencyData.containsKey("US-Dollar")) {
                     Map<String, String> usdInfo = new HashMap<>();
                     usdInfo.put("code", "USD");
                     usdInfo.put("name", "US-Dollar");
-                    usdInfo.put("rate", "1.0"); // 1 USD = 1 USD
-                    usdInfo.put("date", "current"); // Optional: Setze das aktuelle Datum
+                    usdInfo.put("rate", "1.0");
+                    usdInfo.put("date", "current");
                     currencyData.put("US-Dollar", usdInfo);
                 }
 
-                System.out.println("JSON-Datei erfolgreich geladen und Währungen nach Namen sortiert.");
-
+                System.out.println("Währungsdaten erfolgreich geladen.");
 
             } catch (IOException e) {
-                System.out.println("Fehler beim Laden der JSON-Datei: " + e.getMessage());
+                System.err.println("Fehler beim Laden der JSON-Datei: " + e.getMessage());
             }
         } else {
-            System.out.println("Die Datei existiert nicht: " + LOCAL_FILE_PATH);
+            System.err.println("Die Datei existiert nicht: " + LOCAL_FILE_PATH);
         }
     }
 
-    // Zugriff auf Währungsinformationen anhand des Namens
+    // Gibt Währungsinformationen anhand des Namens zurück
     public Map<String, String> getCurrencyInfo(String currencyName) {
         Map<String, String> currencyInfo = currencyData.get(currencyName);
         if (currencyInfo == null) {
@@ -171,11 +190,12 @@ public class CurrencyConverterModel {
         return currencyInfo;
     }
 
-    // Rückgabe aller Währungen
+    // Gibt alle verfügbaren Währungen zurück
     public Map<String, Map<String, String>> getAllCurrencies() {
         return Collections.unmodifiableMap(currencyData);
     }
 
+    // Konvertiert einen Betrag von der Quell- zur Zielwährung
     public BigDecimal convertFromSourceToTarget(double amount, String fromCurrency, String toCurrency) {
         Map<String, String> fromCurrencyInfo = getCurrencyInfo(fromCurrency);
         Map<String, String> toCurrencyInfo = getCurrencyInfo(toCurrency);
@@ -185,31 +205,30 @@ public class CurrencyConverterModel {
             BigDecimal toRate = new BigDecimal(toCurrencyInfo.get("rate"));
             BigDecimal amountBD = new BigDecimal(amount);
 
-            // Berechne das Ergebnis der Umrechnung
+            // Berechnung der Umrechnung
             BigDecimal result = amountBD.divide(fromRate, 10, RoundingMode.HALF_UP) // Zuerst Umrechnung von "from"
                     .multiply(toRate);  // Danach Umrechnung zu "to"
             System.out.println(result.toString());
 
-            // Rufe die dynamische Formatierungsmethode auf
+            // Formatierung des Ergebnisses
             return formatCurrencyDynamically(result);
         }
         return BigDecimal.ZERO;
     }
 
+    // Umgekehrte Umrechnung von der Ziel- zur Quellwährung
+    public BigDecimal convertFromTargetToSource(double amount, String fromCurrency, String toCurrency) {
+        return convertFromSourceToTarget(amount, toCurrency, fromCurrency); // Umgekehrte Berechnung
+    }
 
-
-
-    // Methode zum Formatieren von Beträgen, dynamisch je nach Anzahl der führenden Nullen nach dem Komma
+    // Formatiert Beträge dynamisch basierend auf der Größe des Wertes
     public BigDecimal formatCurrencyDynamically(BigDecimal value) {
-        // Falls der Wert 0 ist, direkt auf zwei Dezimalstellen formatieren
         if (value.compareTo(BigDecimal.ZERO) == 0) {
             return value.setScale(2, RoundingMode.HALF_UP);
         }
 
-        // String-Repräsentation des Wertes holen, um Nachkommastellen zu analysieren
         String valueStr = value.stripTrailingZeros().toPlainString();
 
-        // Dynamische Rundung für sehr kleine Werte (kleiner als 1)
         if (value.compareTo(BigDecimal.ONE) < 0) {
             int decimalPlacesToKeep = 0;
             boolean foundNonZero = false;
@@ -221,25 +240,14 @@ public class CurrencyConverterModel {
                 }
 
                 if (foundNonZero) {
-                    decimalPlacesToKeep = i - 1 + 1; // Nur eine Nachkommastelle nach der ersten relevanten Ziffer
+                    decimalPlacesToKeep = i;
                     break;
                 }
             }
 
-            // Wende die dynamische Rundung an
             return value.setScale(decimalPlacesToKeep, RoundingMode.HALF_UP);
         }
 
-        // Normale Rundung für Werte größer als 1
         return value.setScale(2, RoundingMode.HALF_UP);
     }
-
-
-
-    // Berechnung von Zielwährung (z.B. USD) zu Quellwährung (z.B. EUR)
-    public BigDecimal convertFromTargetToSource(double amount, String fromCurrency, String toCurrency) {
-        return convertFromSourceToTarget(amount, toCurrency, fromCurrency); // Umgekehrte Berechnung
-    }
-
-
 }
