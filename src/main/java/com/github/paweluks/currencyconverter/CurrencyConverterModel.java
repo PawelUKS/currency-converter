@@ -203,7 +203,6 @@ public class CurrencyConverterModel {
             // Berechnung der Umrechnung
             BigDecimal result = amountBD.divide(fromRate, 10, RoundingMode.HALF_UP) // Zuerst Umrechnung von "from"
                     .multiply(toRate);  // Danach Umrechnung zu "to"
-            System.out.println(result.toString());
 
             // Formatierung des Ergebnisses
             return formatCurrencyDynamically(result);
