@@ -245,7 +245,7 @@ public class CurrencyConverterModel {
 
             return value.setScale(decimalPlacesToKeep, RoundingMode.HALF_UP);
         }
-        
+
         // Für Werte größer oder gleich 1 wird auf zwei Dezimalstellen gerundet
         return value.setScale(2, RoundingMode.HALF_UP);
     }
