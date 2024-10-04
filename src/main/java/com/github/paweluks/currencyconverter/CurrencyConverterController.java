@@ -1,6 +1,5 @@
 package com.github.paweluks.currencyconverter;
 
-
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
@@ -14,7 +13,6 @@ import java.net.URL;
 import java.util.*;
 import java.util.function.UnaryOperator;
 
-
 public class CurrencyConverterController implements Initializable {
 
     @FXML
@@ -25,7 +23,6 @@ public class CurrencyConverterController implements Initializable {
 
     @FXML
     private ComboBox<String> comboBox1, comboBox2;
-
 
     private CurrencyConverterModel model;
 

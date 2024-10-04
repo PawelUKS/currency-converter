@@ -18,7 +18,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
 
-
 public class CurrencyConverterModel {
 
     // Konstanten für API-URL und lokale Pfade
@@ -31,7 +30,6 @@ public class CurrencyConverterModel {
 
     // Erstellt das lokale Verzeichnis, falls es nicht existiert
     public void createPath() {
-        // Create LOCAL_PATH
         try {
             Files.createDirectories(Paths.get(LOCAL_PATH));
         } catch (IOException e) {
@@ -56,7 +54,6 @@ public class CurrencyConverterModel {
 
                 // Prüfen, ob die lokale Datei existiert
                 if (Files.exists(path)) {
-                    System.out.println("path existiert");
 
                     // Lese die bestehende JSON-Datei
                     String existingJsonContent = Files.readString(path, StandardCharsets.UTF_8);
@@ -108,7 +105,6 @@ public class CurrencyConverterModel {
         return null;
     }
 
-
     // Extrahiert das Datum aus der lokalen JSON-Datei und formatiert es
     public String getFirstDateFromJson() {
         Path path = Paths.get(LOCAL_FILE_PATH);
@@ -142,7 +138,6 @@ public class CurrencyConverterModel {
         // Rückgabe null, wenn Datei nicht existiert oder ein Fehler auftritt
         return null;
     }
-
 
     // Lädt die Währungsdaten aus der JSON-Datei in die Map
     public void jsonToMap() {
@@ -218,18 +213,21 @@ public class CurrencyConverterModel {
 
     // Umgekehrte Umrechnung von der Ziel- zur Quellwährung
     public BigDecimal convertFromTargetToSource(double amount, String fromCurrency, String toCurrency) {
+        // Tauscht die Währungen für die umgekehrte Berechnung
         return convertFromSourceToTarget(amount, toCurrency, fromCurrency); // Umgekehrte Berechnung
     }
 
     // Formatiert Beträge dynamisch basierend auf der Größe des Wertes
     public BigDecimal formatCurrencyDynamically(BigDecimal value) {
         if (value.compareTo(BigDecimal.ZERO) == 0) {
+            // Bei Null wird auf zwei Dezimalstellen gerundet
             return value.setScale(2, RoundingMode.HALF_UP);
         }
 
         String valueStr = value.stripTrailingZeros().toPlainString();
 
         if (value.compareTo(BigDecimal.ONE) < 0) {
+            // Für Werte kleiner als 1 wird die Anzahl der Dezimalstellen dynamisch angepasst
             int decimalPlacesToKeep = 0;
             boolean foundNonZero = false;
 
@@ -247,7 +245,8 @@ public class CurrencyConverterModel {
 
             return value.setScale(decimalPlacesToKeep, RoundingMode.HALF_UP);
         }
-
+        
+        // Für Werte größer oder gleich 1 wird auf zwei Dezimalstellen gerundet
         return value.setScale(2, RoundingMode.HALF_UP);
     }
 }
